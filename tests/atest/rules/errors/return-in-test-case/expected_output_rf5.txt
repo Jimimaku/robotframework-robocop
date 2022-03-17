@@ -1,0 +1,9 @@
+${rules_dir}${\}test.robot:3:5 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:5:9 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:8:9 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:10:25 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:12:9 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:15:9 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:17:9 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:19:9 [E] 0414 RETURN can only be used inside a user keyword
+${rules_dir}${\}test.robot:21:9 [E] 0414 RETURN can only be used inside a user keyword
