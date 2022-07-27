@@ -9,9 +9,14 @@ from robot.parsing.model.blocks import Keyword, TestCase
 from robot.parsing.model.statements import Comment, EmptyLine
 from robot.parsing.model.visitor import ModelVisitor
 
+try:
+    from robot.parsing.api import InlineIfHeader, ElseHeader, ElseIfHeader
+except ImportError:
+    InlineIfHeader, ElseHeader, ElseIfHeader = None, None, None
+
 from robocop.checkers import RawFileChecker, VisitorChecker
 from robocop.rules import Rule, RuleParam, RuleSeverity
-from robocop.utils import get_errors, get_section_name, token_col
+from robocop.utils import get_errors, get_section_name, token_col, str2bool
 
 rules = {
     "1001": Rule(
@@ -69,6 +74,8 @@ rules = {
         severity=RuleSeverity.WARNING,
     ),
     "1007": Rule(
+        RuleParam(name="strict", default=False, converter=str2bool, desc="Check if indentation is multiply of indent value"),
+        RuleParam(name="indent", default=4, converter=int, desc="Number of spaces to be used as indentation in strict mode"),
         rule_id="1007",
         name="uneven-indent",
         msg="Line is {{ over_or_under }}-indented",
@@ -453,6 +460,16 @@ class UnevenIndentChecker(VisitorChecker):
         Token.TAGS,
     }
 
+    def __int__(self):
+        # TODO maybe create separate strict and non strict checkers, and use them in visit_File
+        self.indent = 1
+        self.is_inline_if = False
+
+    def visit_File(self, node):
+        self.indent = 1
+        self.is_inline_if = False
+        self.generic_visit(node)
+
     def visit_TestCaseSection(self, node):  # noqa
         self.check_standalone_comments_indent(node)
 
@@ -485,10 +502,39 @@ class UnevenIndentChecker(VisitorChecker):
         self.generic_visit(node)
 
     def visit_ForLoop(self, node):  # noqa
+        self.indent += 1
         column_index = 2 if node.end is not None else 0
         self.check_indents(node, node.header.tokens[1].col_offset + 1, column_index)
 
-    visit_For = visit_If = visit_While = visit_ForLoop
+    visit_For = visit_While = visit_ForLoop
+
+    @staticmethod
+    def check_optional_headers(node, *headers):
+        """
+        Check if node header is instance of the headers.
+        Headers may be set to None
+        if the installed Robot Framework version does not support them yet.
+        """
+        if any(header is None for header in headers):
+            return False
+        return isinstance(node.header, tuple(*headers))
+
+    def visit_If(self, node):  # noqa
+        # ignore inline ifs and their else/else if branches
+        if self.is_inline_if:
+            return node
+        self.is_inline_if = self.check_optional_headers(node, InlineIfHeader)
+        if not self.check_optional_headers(node, ElseHeader, ElseIfHeader):
+            self.indent += 1
+        self.generic_visit(node)
+        if not self.check_optional_headers(node, ElseHeader, ElseIfHeader):
+            self.indent -= 1
+        column_index = 2 if node.end is not None else 0
+        self.check_indents(node, node.header.tokens[1].col_offset + 1, column_index)
+        if self.is_inline_if:
+            self.is_inline_if = False
+            return node
+
 
     def visit_Try(self, node):  # noqa
         column_index = 2 if node.end is not None else 0
@@ -502,6 +548,7 @@ class UnevenIndentChecker(VisitorChecker):
         tokens = node.tokens if hasattr(node, "tokens") else node.header.tokens
         indent_len = 0
         for token in tokens:
+            # TODO: Check if it ever reach 2nd separator in a row (with rf atests)
             if token.type != Token.SEPARATOR:
                 break
             indent_len += len(token.value.expandtabs(4))
