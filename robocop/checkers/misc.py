@@ -395,14 +395,13 @@ class ConsistentAssignmentSignChecker(VisitorChecker):
     def visit_File(self, node):  # noqa
         self.keyword_expected_sign_type = self.param("inconsistent-assignment", "assignment_sign_type")
         self.variables_expected_sign_type = self.param("inconsistent-assignment-in-variables", "assignment_sign_type")
-        if "autodetect" in [
-            self.param("inconsistent-assignment", "assignment_sign_type"),
-            self.param("inconsistent-assignment-in-variables", "assignment_sign_type"),
-        ]:
+        autodetect_assignments = self.keyword_expected_sign_type == "autodetect"
+        autodetect_assignments_in_vars = self.variables_expected_sign_type == "autodetect"
+        if autodetect_assignments or autodetect_assignments_in_vars:
             auto_detector = self.auto_detect_assignment_sign(node)
-            if self.param("inconsistent-assignment", "assignment_sign_type") == "autodetect":
+            if autodetect_assignments:
                 self.keyword_expected_sign_type = auto_detector.keyword_most_common
-            if self.param("inconsistent-assignment-in-variables", "assignment_sign_type") == "autodetect":
+            if autodetect_assignments_in_vars:
                 self.variables_expected_sign_type = auto_detector.variables_most_common
         self.generic_visit(node)
 

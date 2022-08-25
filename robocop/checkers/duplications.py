@@ -369,8 +369,7 @@ class DuplicationsChecker(VisitorChecker):
                     lineno=arg.lineno,
                     col=arg.col_offset + 1,
                 )
-            else:
-                args.add(name)
+            args.add(name)
 
     def visit_Error(self, node):  # noqa
         for error in get_errors(node):

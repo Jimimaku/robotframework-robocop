@@ -89,10 +89,7 @@ class MissingDocumentationChecker(VisitorChecker):
         self.check_if_docs_are_present(node, "missing-doc-suite")
 
     def visit_File(self, node):  # noqa
-        for section in node.sections:
-            if isinstance(section, SettingSection):
-                break
-        else:
+        if all(not isinstance(section, SettingSection) for section in node.sections):
             self.report("missing-doc-suite", node=node, lineno=1)
         super().visit_File(node)
 

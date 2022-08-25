@@ -350,8 +350,13 @@ class LineLengthChecker(RawFileChecker):
     # replace `# noqa` or `# robocop`, `# robocop: enable`, `# robocop: disable=optional,rule,names`
     disabler_pattern = re.compile(r"(# )+(noqa|robocop: ?(?P<disabler>disable|enable)=?(?P<rules>[\w\-,]*))")
 
+    def line_is_ignored(self, line):
+        return self.param("line-too-long", "ignore_pattern") and self.param("line-too-long", "ignore_pattern").search(
+            line
+        )
+
     def check_line(self, line, lineno):
-        if self.param("line-too-long", "ignore_pattern") and self.param("line-too-long", "ignore_pattern").search(line):
+        if self.line_is_ignored(line):
             return
         line = self.disabler_pattern.sub("", line)
         line = line.rstrip().expandtabs(4)
@@ -451,10 +456,7 @@ class EmptySettingsChecker(VisitorChecker):
         self.generic_visit(node)
 
     def visit_Keyword(self, node):  # noqa
-        if node.name:
-            self.parent_node_name = f"'{node.name}' Keyword"
-        else:
-            self.parent_node_name = ""
+        self.parent_node_name = f"'{node.name}' Keyword" if node.name else ""
         self.generic_visit(node)
 
     def visit_Metadata(self, node):  # noqa
