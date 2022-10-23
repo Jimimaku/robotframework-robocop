@@ -49,7 +49,7 @@ class TestRuleSeverityThreshold:
     def test_invalid_threshold_config(self):
         thresholds = SeverityThreshold("line_length")
         exp_error = (
-            "Invalid severity value 'error'. " "It should be list of `severity=param_value` pairs, separated by `:`."
+            "Invalid severity value 'error'. It should be list of `severity=param_value` pairs, separated by `:`."
         )
         with pytest.raises(robocop.exceptions.InvalidArgumentError, match=exp_error):
             thresholds.value = "error"
