@@ -192,32 +192,18 @@ class TestDefaultConfig:
             config = Config(from_cli=True)
         assert sorted(config.configure) == expected
 
-    def test_load_config_with_relative_paths_pyproject(self, path_to_test_data):
+    @pytest.mark.parametrize("config_path", ["relative_path_in_config_pyproject", "relative_path_in_config_robocop"])
+    def test_load_config_with_relative_paths_pyproject(self, config_path, path_to_test_data):
         """
-        pyproject.toml resolves relative path to config directory.
-        For example if root/pyproject.toml contains test.py, it will become root/test.py
+        Relative paths in the configuration file should be resolved (relative to the configuration file path).
+        For example if root/pyproject.toml contains test.py path, it will become root/test.py
         """
-        src = path_to_test_data / "relative_path_in_config_pyproject"
+        src = path_to_test_data / config_path
         work_dir = src / "nested"
         with working_directory(work_dir), patch.object(sys, "argv", ["robocop"]):
             config = Config(from_cli=True)
             ext_rule_path = config.ext_rules.pop()
             assert Path(ext_rule_path).absolute() == src / "test.py"
-
-    def test_load_config_with_relative_paths_robocop(self, path_to_test_data):
-        """
-        .robocop argument files does not resolve relative paths -
-        they are relative to the path Robocop is running.
-        For example if root/.robocop contains test.py,
-        and you're running robocop from root/nested,
-        it will become root/nested/test.py
-        """
-        src = path_to_test_data / "relative_path_in_config_robocop"
-        work_dir = src / "nested"
-        with working_directory(work_dir), patch.object(sys, "argv", ["robocop"]):
-            config = Config(from_cli=True)
-            ext_rule_path = config.ext_rules.pop()
-            assert Path(ext_rule_path).absolute() == work_dir / "test.py"
 
     def test_override_default_config(self, path_to_test_data):
         """

@@ -402,10 +402,10 @@ class Config:
                 parsed_args.append(arg)
         return parsed_args
 
-    def load_argument_file(self, argfile):
+    def load_args_from_file(self, argfile):
+        args = []
         try:
             with FileReader(argfile) as arg_f:
-                args = []
                 for line in arg_f.readlines():
                     if line.strip().startswith("#"):
                         continue
@@ -414,13 +414,45 @@ class Config:
                         if not arg:
                             continue
                         args.append(arg)
-                if "-A" in args or "--argumentfile" in args:
-                    raise NestedArgumentFileError(argfile)
-                if args:
-                    self.config_from = argfile
-                return args
         except FileNotFoundError:
             raise ArgumentFileNotFoundError(argfile) from None
+        return args
+
+    def load_argument_file(self, argfile):
+        args = self.load_args_from_file(argfile)
+        # following handling is required to resolve possible relative paths in the argument files
+        config_dir = Path(argfile).parent
+        flags = {
+            "-nr",
+            "--no-recursive",
+            "-lr",
+            "--list-reports",
+            "-v",
+            "--version",
+            "-vv",
+            "--verbose",
+            "--directives",
+        }
+        ext_rules_options = {"-rules", "--ext-rules"}
+        argument_file_options = {"-A", "--argumentfile"}
+        resolve_relative = {*ext_rules_options, "-o", "--output"}
+        is_prev_option = False
+        normalized = []
+        for arg in args:
+            if is_prev_option:
+                if normalized[-1] in resolve_relative:
+                    arg = self.resolve_relative(arg, config_dir, ensure_exists=True)
+                is_prev_option = False
+            elif arg.startswith("-"):
+                if arg in argument_file_options:
+                    raise NestedArgumentFileError(argfile)
+                is_prev_option = arg not in flags
+            else:
+                arg = self.resolve_relative(arg, config_dir, ensure_exists=True)
+            normalized.append(arg)
+        if normalized:
+            self.config_from = argfile
+        return normalized
 
     @staticmethod
     def replace_in_set(container: Set, old_key: str, new_key: str):

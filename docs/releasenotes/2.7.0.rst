@@ -27,3 +27,11 @@ that when user specified path to argument file in the cli::
 
 Robocop would read both default configuration file and configuration file from ``--argumentfile``. Now it will read
 default configuration file only if ``-A / --argumentfile`` options are not used.
+
+Relative paths in the argument file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We fixed recently a bug where relative paths in the configuration file were not resolved in relation to the
+configuration path but to the Robocop execution directory (#668, #709). The fix was only done to ``pyproject.toml`` files
+and not to ``.robocop`` argument files. Now thanks to changes in the design it was possible to implement fix for
+argument files as well.
