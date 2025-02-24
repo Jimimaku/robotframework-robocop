@@ -8,7 +8,7 @@ class TestRuleAcceptance(RuleAcceptance):
     def test_templated_suite(self, config):
         self.check_rule(config=config, src_files=["templated_suite.robot"], expected_file=None)
 
-    @pytest.mark.parametrize("file_suffix, target_version", [("", ">=5"), ("_rf4", "==4.*"), ("_rf3", "==3.*")])
+    @pytest.mark.parametrize(("file_suffix", "target_version"), [("", ">=5"), ("_rf4", "==4.*"), ("_rf3", "==3.*")])
     def test_strict_3_spaces(self, file_suffix, target_version):
         self.check_rule(
             config="-c bad-indent:indent:3",
@@ -17,7 +17,7 @@ class TestRuleAcceptance(RuleAcceptance):
             target_version=target_version,
         )
 
-    @pytest.mark.parametrize("file_suffix, target_version", [("", ">=5"), ("_rf4", "==4.*"), ("_rf3", "==3.*")])
+    @pytest.mark.parametrize(("file_suffix", "target_version"), [("", ">=5"), ("_rf4", "==4.*"), ("_rf3", "==3.*")])
     def test_rule(self, file_suffix, target_version):
         self.check_rule(
             config="-c bad-indent:indent:-1",
@@ -31,4 +31,9 @@ class TestRuleAcceptance(RuleAcceptance):
             config="-c bad-indent:indent:-1",
             src_files=["bug758/templated_suite.robot"],
             expected_file="bug758/expected_output.txt",
+        )
+
+    def test_groups(self):
+        self.check_rule(
+            src_files=["groups/groups.robot"], expected_file="groups/expected_groups.txt", target_version=">=7.2"
         )

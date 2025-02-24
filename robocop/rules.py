@@ -25,10 +25,13 @@ Output message of rules can be defined with ``-f`` / ``--format`` argument. Defa
 * ``desc``:       description of the rule
 
 """
+
+from __future__ import annotations
+
 from enum import Enum
 from functools import total_ordering
 from textwrap import dedent
-from typing import Any, Callable, Dict, Optional, Pattern, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from jinja2 import Template
 
@@ -36,6 +39,10 @@ import robocop.exceptions
 from robocop.utils import ROBOT_VERSION
 from robocop.utils.misc import str2bool
 from robocop.utils.version_matching import VersionSpecifier
+from robocop.version import __version__
+
+if TYPE_CHECKING:
+    from re import Pattern
 
 
 @total_ordering
@@ -64,7 +71,7 @@ class RuleSeverity(Enum):
     ERROR = "E"
 
     @classmethod
-    def parser(cls, value: Union[str, "RuleSeverity"], rule_severity=True) -> "RuleSeverity":
+    def parser(cls, value: str | RuleSeverity, rule_severity=True) -> RuleSeverity:
         # parser can be invoked from Rule() with severity=RuleSeverity.WARNING (enum directly) or
         # from configuration with severity:W (string representation)
         severity = {
@@ -134,7 +141,7 @@ class RuleParam:
     Each rule can have number of parameters (default one is severity).
     """
 
-    def __init__(self, name: str, default: Any, converter: Callable, desc: str, show_type: Optional[str] = None):
+    def __init__(self, name: str, default: Any, converter: Callable, desc: str, show_type: str | None = None):
         """
         :param name: Name of the parameter used when configuring rule (also displayed in the docs)
         :param default: Default value of the parameter
@@ -152,9 +159,9 @@ class RuleParam:
         self.value = default
 
     def __str__(self):
-        s = f"{self.name} = {self.raw_value}\n" f"        type: {self.converter.__name__}"
+        s = f"{self.name} = {self.raw_value}\n        type: {self.converter.__name__}"
         if self.desc:
-            s += "\n" f"        info: {self.desc}"
+            s += f"\n        info: {self.desc}"
         return s
 
     @property
@@ -237,7 +244,7 @@ class SeverityThreshold:
                     f"Invalid severity value '{value}'. It should be list of `severity=param_value` pairs, separated by `:`."
                 ) from None
             severity = self.parse_severity(sev)
-            thresholds.append((severity, int(param_value)))  # TODO support non-int params
+            thresholds.append((severity, int(param_value)))  # TODO: support non-int params
         self.thresholds = sorted(thresholds, key=lambda x: x[0], reverse=True)
 
     def check_condition(self, value, threshold):
@@ -282,16 +289,17 @@ class Rule:
 
     def __init__(
         self,
-        *params: Union[RuleParam, SeverityThreshold],
+        *params: RuleParam | SeverityThreshold,
         rule_id: str,
         name: str,
         msg: str,
         severity: RuleSeverity,
         version: str = None,
         docs: str = "",
-        added_in_version: Optional[str] = None,
+        added_in_version: str | None = None,
         enabled: bool = True,
         deprecated: bool = False,
+        help_url: str | None = None,
     ):
         """
         :param params: RuleParam() or SeverityThreshold() instances
@@ -305,6 +313,7 @@ class Rule:
         :param added_in_version: Version of the Robocop when the Rule was created
         :param enabled: Enable/disable rule by default using this parameter
         :param deprecated: Deprecate rule. If rule is used in configuration, it will issue a warning.
+        :param help_url: URL to rule documentation or other help resource.
         """
         self.rule_id = rule_id
         self.name = name
@@ -336,6 +345,7 @@ class Rule:
         self.added_in_version = added_in_version
         self.community_rule = False
         self.category_id = None
+        self.help_url = help_url
 
     @property
     def severity(self):
@@ -384,7 +394,7 @@ class Rule:
         return all(ROBOT_VERSION in VersionSpecifier(condition) for condition in version.split(";"))
 
     @staticmethod
-    def get_template(msg: str) -> Optional[Template]:
+    def get_template(msg: str) -> Template | None:
         if "{" in msg:
             return Template(msg)
         return None
@@ -456,11 +466,31 @@ class Rule:
             overwrite_severity=severity,
         )
 
-    def matches_pattern(self, pattern: Union[str, Pattern]):
-        """check if this rule matches given pattern"""
+    def matches_pattern(self, pattern: str | Pattern):
+        """Check if this rule matches given pattern"""
         if isinstance(pattern, str):
             return pattern in (self.name, self.rule_id)
         return pattern.match(self.name) or pattern.match(self.rule_id)
+
+
+class DefaultRule(Rule):
+    @property
+    def help_url(self) -> str:
+        return f"https://robocop.readthedocs.io/en/{__version__}/rules_list.html#{self.name}"
+
+    @help_url.setter
+    def help_url(self, _):
+        pass
+
+
+class CommunityRule(Rule):
+    @property
+    def help_url(self) -> str:
+        return f"https://robocop.readthedocs.io/en/{__version__}/community_rules.html#{self.name}"
+
+    @help_url.setter
+    def help_url(self, _):
+        pass
 
 
 class Message:
@@ -481,6 +511,7 @@ class Message:
         self.enabled = rule.enabled
         self.rule_id = rule.rule_id
         self.name = rule.name
+        self.help_url = rule.help_url
         self.severity = self.get_severity(overwrite_severity, rule, sev_threshold_value)
         self.desc = msg
         self.source = source
@@ -510,7 +541,7 @@ class Message:
     def get_fullname(self) -> str:
         return f"{self.severity.value}{self.rule_id} ({self.name})"
 
-    def to_json(self) -> Dict:
+    def to_json(self) -> dict:
         return {
             "source": self.source,
             "line": self.line,

@@ -1,19 +1,17 @@
-"""
-Documentation checkers
-"""
+"""Documentation checkers"""
+
 from pathlib import Path
 
-from robot.parsing.model.blocks import SettingSection
 from robot.parsing.model.statements import Documentation
 
 from robocop.checkers import VisitorChecker
-from robocop.rules import Rule, RuleParam, RuleSeverity
+from robocop.rules import DefaultRule, RuleParam, RuleSeverity
 from robocop.utils.misc import str2bool
 
 RULE_CATEGORY_ID = "02"
 
 rules = {
-    "0201": Rule(
+    "0201": DefaultRule(
         rule_id="0201",
         name="missing-doc-keyword",
         msg="Missing documentation in '{{ name }}' keyword",
@@ -32,7 +30,7 @@ rules = {
                 Other Step
         """,
     ),
-    "0202": Rule(
+    "0202": DefaultRule(
         RuleParam(
             name="ignore_templated",
             default="True",
@@ -61,7 +59,7 @@ rules = {
         Possible values are: ``Yes`` / ``1`` / ``True`` (default) or ``No`` / ``False`` / ``0``.
         """,
     ),
-    "0203": Rule(
+    "0203": DefaultRule(
         rule_id="0203",
         name="missing-doc-suite",
         msg="Missing documentation in suite",
@@ -74,7 +72,7 @@ rules = {
             Documentation    Suite documentation
         """,
     ),
-    "0204": Rule(
+    "0204": DefaultRule(
         rule_id="0204",
         name="missing-doc-resource-file",
         msg="Missing documentation in resource file",
@@ -105,24 +103,24 @@ class MissingDocumentationChecker(VisitorChecker):
         self.settings_section_exists = False
         super().__init__()
 
-    def visit_Keyword(self, node):  # noqa
+    def visit_Keyword(self, node):  # noqa: N802
         if node.name.lstrip().startswith("#"):
             return
         self.check_if_docs_are_present(node, "missing-doc-keyword", extend_disablers=True)
 
-    def visit_TestCase(self, node):  # noqa
+    def visit_TestCase(self, node):  # noqa: N802
         if self.param("missing-doc-test-case", "ignore_templated") and self.templated_suite:
             return
         self.check_if_docs_are_present(node, "missing-doc-test-case", extend_disablers=True)
 
-    def visit_SettingSection(self, node):  # noqa
+    def visit_SettingSection(self, node):  # noqa: N802
         self.settings_section_exists = True
         if self.is_resource:
             self.check_if_docs_are_present(node, "missing-doc-resource-file", extend_disablers=False)
         else:
             self.check_if_docs_are_present(node, "missing-doc-suite", extend_disablers=False)
 
-    def visit_File(self, node):  # noqa
+    def visit_File(self, node):  # noqa: N802
         source = node.source if node.source else self.source
         self.is_resource = source and ".resource" in Path(source).suffix
         self.settings_section_exists = False

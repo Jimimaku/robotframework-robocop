@@ -1,6 +1,5 @@
-"""
-Errors checkers
-"""
+"""Errors checkers"""
+
 import re
 
 from robot.api import Token
@@ -11,20 +10,20 @@ except ImportError:
     If = None
 
 from robocop.checkers import VisitorChecker
-from robocop.rules import Rule, RuleSeverity
+from robocop.rules import DefaultRule, RuleSeverity
 from robocop.utils import ROBOT_VERSION, find_robot_vars
 
 RULE_CATEGORY_ID = "04"
 
 rules = {
-    "0401": Rule(
+    "0401": DefaultRule(
         rule_id="0401",
         name="parsing-error",
         msg="Robot Framework syntax error: {{ error_msg }}",
         severity=RuleSeverity.ERROR,
         added_in_version="1.0.0",
     ),
-    "0402": Rule(
+    "0402": DefaultRule(
         rule_id="0402",
         name="not-enough-whitespace-after-setting",
         msg="Provide at least two spaces after '{{ setting_name }}' setting",
@@ -36,24 +35,24 @@ rules = {
             Test
                 [Documentation] doc  # only one space after [Documentation]
                 Keyword
-                
+
             *** Keywords ***
             Keyword
                 [Documentation]  This is doc
                 [Arguments] ${var}  # only one space after [Arguments]
                 Should Be True  ${var}
-            
+
         """,
         added_in_version="1.0.0",
     ),
-    "0403": Rule(
+    "0403": DefaultRule(
         rule_id="0403",
         name="missing-keyword-name",
         msg="Missing keyword name when calling some values",
         severity=RuleSeverity.ERROR,
         docs="""
         Example of rule violation::
-        
+
             *** Keywords ***
             Keyword
                 ${var}
@@ -62,30 +61,30 @@ rules = {
         """,
         added_in_version="1.8.0",
     ),
-    "0404": Rule(
+    "0404": DefaultRule(
         rule_id="0404",
         name="variables-import-with-args",
         msg="YAML variable files do not take arguments",
         severity=RuleSeverity.ERROR,
         docs="""
         Example of rule violation::
-        
+
             *** Settings ***
             Variables    vars.yaml        arg1
             Variables    variables.yml    arg2
             Variables    module           arg3  # valid from RF > 5
-        
+
         """,
         added_in_version="1.11.0",
     ),
-    "0405": Rule(
+    "0405": DefaultRule(
         rule_id="0405",
         name="invalid-continuation-mark",
         msg="Invalid continuation mark '{{ mark }}'. It should be '...'",
         severity=RuleSeverity.ERROR,
         docs="""
         Example of rule violation::
-        
+
             Keyword
             ..  ${var}  # .. instead of ...
             ...  1
@@ -95,14 +94,14 @@ rules = {
         added_in_version="1.11.0",
     ),
     # there is not-enough-whitespace-after-newline-marker for keyword calls already
-    "0406": Rule(
+    "0406": DefaultRule(
         rule_id="0406",
         name="not-enough-whitespace-after-newline-marker",
         msg="Provide at least two spaces after '...' marker",
         severity=RuleSeverity.ERROR,
         docs="""
         Example of rule violation::
-        
+
             @{LIST}  1
             ... 2  # not enough whitespace
             ...  3
@@ -110,48 +109,48 @@ rules = {
         """,
         added_in_version="1.11.0",
     ),
-    "0407": Rule(
+    "0407": DefaultRule(
         rule_id="0407",
         name="invalid-argument",
         msg="{{ error_msg }}",
         severity=RuleSeverity.ERROR,
         version=">=4.0",
         docs="""
-        Argument names should follow variable naming syntax: start with identifier (``$``, ``@`` or ``&``) and enclosed in 
+        Argument names should follow variable naming syntax: start with identifier (``$``, ``@`` or ``&``) and enclosed in
         curly brackets (``{}``).
-        
+
         Valid names::
-        
+
             Keyword
                 [Arguments]    ${var}    @{args}    &{config}    ${var}=default
-        
+
         Invalid names::
-        
+
             Keyword
                 [Arguments]    {var}    @args}    var=default
-        
+
         """,
         added_in_version="1.11.0",
     ),
-    "0408": Rule(
+    "0408": DefaultRule(
         rule_id="0408",
         name="non-existing-setting",
         msg="{{ error_msg }}",
         severity=RuleSeverity.ERROR,
         docs="""
         Non-existing setting can't be used in the code.
-        
+
         Example of rule violation::
-        
+
            *** Test Cases ***
            My Test Case
                [Not Existing]  arg
                [Arguments]  ${arg}
-    
+
         """,
         added_in_version="1.11.0",
     ),
-    "0409": Rule(
+    "0409": DefaultRule(
         rule_id="0409",
         name="setting-not-supported",
         msg="Setting '[{{ setting_name }}]' is not supported in {{ test_or_keyword }}. "
@@ -159,27 +158,27 @@ rules = {
         severity=RuleSeverity.ERROR,
         docs="""
         Following settings are supported in Test Case or Task::
-        
+
             [Documentation]	 Used for specifying a test case documentation.
             [Tags]	         Used for tagging test cases.
             [Setup]	         Used for specifying a test setup.
             [Teardown]	     Used for specifying a test teardown.
             [Template]	     Used for specifying a template keyword.
             [Timeout]	     Used for specifying a test case timeout.
-        
+
         Following settings are supported in Keyword::
-        
+
             [Documentation]	 Used for specifying a user keyword documentation.
             [Tags]	         Used for specifying user keyword tags.
             [Arguments]	     Used for specifying user keyword arguments.
             [Return]	     Used for specifying user keyword return values.
             [Teardown]	     Used for specifying user keyword teardown.
             [Timeout]	     Used for specifying a user keyword timeout.
-        
+
         """,
         added_in_version="1.11.0",
     ),
-    "0410": Rule(
+    "0410": DefaultRule(
         rule_id="0410",
         name="not-enough-whitespace-after-variable",
         msg="Provide at least two spaces after '{{ variable_name }}' variable name",
@@ -187,31 +186,31 @@ rules = {
         version=">=4.0",
         docs="""
         Example of rule violation::
-        
+
             ${variable} 1  # not enough whitespace
             ${other_var}  2
-        
+
         """,
         added_in_version="1.11.0",
     ),
-    "0411": Rule(
+    "0411": DefaultRule(
         rule_id="0411",
         name="not-enough-whitespace-after-suite-setting",
         msg="Provide at least two spaces after '{{ setting_name }}' setting",
         severity=RuleSeverity.ERROR,
         docs="""
         Example of rule violation::
-        
+
             *** Settings ***
             Library Collections  # not enough whitespace
             Force Tags  tag
             ...  tag2
             Suite Setup Keyword  # not enough whitespace
-        
+
         """,
         added_in_version="1.11.0",
     ),
-    "0412": Rule(
+    "0412": DefaultRule(
         rule_id="0412",
         name="invalid-for-loop",
         msg="Invalid for loop syntax: {{ error_msg }}",
@@ -219,7 +218,7 @@ rules = {
         version=">=4.0",
         added_in_version="1.11.0",
     ),
-    "0413": Rule(
+    "0413": DefaultRule(
         rule_id="0413",
         name="invalid-if",
         msg="Invalid IF syntax: {{ error_msg }}",
@@ -227,7 +226,7 @@ rules = {
         version=">=4.0",
         added_in_version="1.11.0",
     ),
-    "0414": Rule(
+    "0414": DefaultRule(
         rule_id="0414",
         name="return-in-test-case",
         msg="RETURN can only be used inside a user keyword",
@@ -235,7 +234,7 @@ rules = {
         version=">=5.0",
         added_in_version="2.0.0",
     ),
-    "0415": Rule(
+    "0415": DefaultRule(
         rule_id="0415",
         name="invalid-section-in-resource",
         msg="Resource file can't contain '{{ section_name }}' section",
@@ -246,7 +245,7 @@ rules = {
         severity=RuleSeverity.ERROR,
         added_in_version="3.1.0",
     ),
-    "0416": Rule(
+    "0416": DefaultRule(
         rule_id="0416",
         name="invalid-setting-in-resource",
         msg="Settings section in resource file can't contain '{{ section_name }}' setting",
@@ -257,7 +256,7 @@ rules = {
         severity=RuleSeverity.ERROR,
         added_in_version="3.3.0",
     ),
-    "0417": Rule(
+    "0417": DefaultRule(
         rule_id="0417",
         name="unsupported-setting-in-init-file",
         msg="Setting '{{ setting }}' is not supported in initialization files",
@@ -335,26 +334,26 @@ class ParsingErrorChecker(VisitorChecker):
         super().__init__()
         self.in_block = None
 
-    def visit_File(self, node):
+    def visit_File(self, node):  # noqa: N802
         self.generic_visit(node)
 
-    def visit_If(self, node):  # noqa
+    def visit_If(self, node):  # noqa: N802
         self.in_block = node  # to ensure we're in IF for `invalid-if` rule
         self.parse_errors(node)
         self.generic_visit(node)
 
-    visit_For = visit_While = visit_Try = visit_If
+    visit_For = visit_While = visit_Try = visit_If  # noqa: N815
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         if node.keyword and node.keyword.startswith("..."):
             col = node.data_tokens[0].col_offset + 1
             self.report("not-enough-whitespace-after-newline-marker", node=node, col=col, end_col=col + 3)
         self.generic_visit(node)
 
-    def visit_Statement(self, node):  # noqa
+    def visit_Statement(self, node):  # noqa: N802
         self.parse_errors(node)
 
-    def visit_InvalidSection(self, node):  # noqa
+    def visit_InvalidSection(self, node):  # noqa: N802
         invalid_header = node.header.get_token(Token.INVALID_HEADER)
         if "Resource file with" in invalid_header.error:
             section_name = invalid_header.value
@@ -365,7 +364,7 @@ class ParsingErrorChecker(VisitorChecker):
                 end_col=node.col_offset + len(section_name) + 1,
             )
 
-    def parse_errors(self, node):  # noqa
+    def parse_errors(self, node):
         if node is None:
             return
         if ROBOT_VERSION.major != 3:
@@ -374,7 +373,7 @@ class ParsingErrorChecker(VisitorChecker):
         else:
             self.handle_error(node, node.error)
 
-    def handle_error(self, node, error, error_index=0):  # noqa
+    def handle_error(self, node, error, error_index=0):
         if not error:
             return
         if any(should_ignore in error for should_ignore in self.ignore_errors):
@@ -575,11 +574,7 @@ class ParsingErrorChecker(VisitorChecker):
 
     @staticmethod
     def is_var_positional(value):
-        if not value:
-            return False
-        if value.startswith("&") or "=" in value:
-            return True
-        return False
+        return value and (value.startswith("&") or "=" in value)
 
     def handle_positional_after_named(self, node, error_index):
         """
@@ -642,7 +637,7 @@ class TwoSpacesAfterSettingsChecker(VisitorChecker):
         self.setting_pattern = re.compile(r"\[\s?(\w+)\s?\]")
         super().__init__()
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         """Invalid settings like '[Arguments] ${var}' will be parsed as keyword call"""
         if not node.keyword:
             return
@@ -665,10 +660,10 @@ class MissingKeywordName(VisitorChecker):
 
     reports = ("missing-keyword-name",)
 
-    def visit_File(self, node):
+    def visit_File(self, node):  # noqa: N802
         self.generic_visit(node)
 
-    def visit_EmptyLine(self, node):  # noqa
+    def visit_EmptyLine(self, node):  # noqa: N802
         if ROBOT_VERSION.major < 5:
             return
         assign_token = node.get_token(Token.ASSIGN)
@@ -680,7 +675,7 @@ class MissingKeywordName(VisitorChecker):
                 col=assign_token.col_offset + 1,
             )
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         if not node.keyword:
             self.report(
                 "missing-keyword-name",
@@ -696,6 +691,6 @@ class VariablesImportErrorChecker(VisitorChecker):
 
     reports = ("variables-import-with-args",)
 
-    def visit_VariablesImport(self, node):  # noqa
+    def visit_VariablesImport(self, node):  # noqa: N802
         if node.name and node.name.endswith((".yaml", ".yml")) and node.get_token(Token.ARGUMENT):
             self.report("variables-import-with-args", node=node)

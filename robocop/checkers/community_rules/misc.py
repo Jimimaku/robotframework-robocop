@@ -2,13 +2,13 @@ from robot.api import Token
 from robot.libraries import STDLIBS
 
 from robocop.checkers import VisitorChecker
-from robocop.rules import Rule, RuleSeverity
+from robocop.rules import CommunityRule, RuleSeverity
 
 RULE_CATEGORY_ID = "01"
 
 
 rules = {
-    "10101": Rule(
+    "10101": CommunityRule(
         rule_id="10101",
         name="non-builtin-imports-not-sorted",
         msg="Non builtin library import '{{ custom_import }}' should be placed before '{{ previous_custom_import }}'",
@@ -16,7 +16,7 @@ rules = {
         added_in_version="5.2.0",
         enabled=False,
         docs="""
-        Example of rule violation:
+        Example of rule violation::
 
             *** Settings ***
             Library    Collections
@@ -25,7 +25,7 @@ rules = {
 
         """,
     ),
-    "10102": Rule(
+    "10102": CommunityRule(
         rule_id="10102",
         name="resources-imports-not-sorted",
         msg="Resource import '{{ resource_import }}' should be placed before '{{ previous_resource_import }}'",
@@ -33,7 +33,7 @@ rules = {
         added_in_version="5.2.0",
         enabled=False,
         docs="""
-        Example of rule violation:
+        Example of rule violation::
 
             *** Settings ***
             Resource   CustomResource.resource
@@ -45,9 +45,7 @@ rules = {
 
 
 class NonBuiltinLibrariesImportOrderChecker(VisitorChecker):
-    """
-    Find and report Non Builtin Libraries or Resources imported not in alphabetical order.
-    """
+    """Find and report Non Builtin Libraries or Resources imported not in alphabetical order."""
 
     reports = (
         "non-builtin-imports-not-sorted",
@@ -59,7 +57,7 @@ class NonBuiltinLibrariesImportOrderChecker(VisitorChecker):
         self.resources = []
         super().__init__()
 
-    def visit_File(self, node):  # noqa
+    def visit_File(self, node):  # noqa: N802
         self.non_builtin_libraries = []
         self.resources = []
         self.generic_visit(node)
@@ -90,11 +88,11 @@ class NonBuiltinLibrariesImportOrderChecker(VisitorChecker):
                 )
             previous = resource
 
-    def visit_LibraryImport(self, node):  # noqa
+    def visit_LibraryImport(self, node):  # noqa: N802
         if node.name and node.name not in STDLIBS:
             self.non_builtin_libraries.append(node)
 
-    def visit_ResourceImport(self, node):  # noqa
+    def visit_ResourceImport(self, node):  # noqa: N802
         if not node.name:
             return
         self.resources.append(node)

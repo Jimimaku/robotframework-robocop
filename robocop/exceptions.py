@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from robocop.rules import Rule
@@ -83,14 +83,14 @@ class InvalidReportName(ConfigGeneralError):
     def __init__(self, report, reports):
         from robocop.utils import RecommendationFinder
 
-        report_names = sorted(list(reports.keys()) + ["all"])
+        report_names = sorted([*list(reports.keys()), "all"])
         similar = RecommendationFinder().find_similar(report, report_names)
         msg = f"Provided report '{report}' does not exist. {similar}"
         super().__init__(msg)
 
 
 class RuleDoesNotExist(ConfigGeneralError):
-    def __init__(self, rule: str, rules: Dict[str, "Rule"]):
+    def __init__(self, rule: str, rules: dict[str, "Rule"]):
         from robocop.utils import RecommendationFinder
 
         similar = RecommendationFinder().find_similar(rule, rules)
@@ -99,7 +99,7 @@ class RuleDoesNotExist(ConfigGeneralError):
 
 
 class RuleOrReportDoesNotExist(ConfigGeneralError):
-    def __init__(self, rule: str, rules: Dict[str, "Rule"]):
+    def __init__(self, rule: str, rules: dict[str, "Rule"]):
         from robocop.utils import RecommendationFinder
 
         similar = RecommendationFinder().find_similar(rule, rules)
@@ -127,7 +127,7 @@ def handle_robot_errors(func):
             return func(*args, **kwargs)
         except robot.errors.DataError:
             raise
-        except:  # noqa
+        except:  # noqa: E722
             raise RobotFrameworkParsingError
 
     return wrap_errors

@@ -1,13 +1,11 @@
-"""
-Duplications checkers
-"""
+"""Duplications checkers"""
+
 from collections import defaultdict
 
 from robot.api import Token
-from robot.variables.search import search_variable
 
 from robocop.checkers import VisitorChecker
-from robocop.rules import Rule, RuleParam, RuleSeverity
+from robocop.rules import DefaultRule, RuleParam, RuleSeverity
 from robocop.utils import get_errors, normalize_robot_name, normalize_robot_var_name
 
 
@@ -35,49 +33,49 @@ def configure_sections_order(value):
 RULE_CATEGORY_ID = "08"
 
 rules = {
-    "0801": Rule(
+    "0801": DefaultRule(
         rule_id="0801",
         name="duplicated-test-case",
         msg="Multiple test cases with name '{{ name }}' (first occurrence in line {{ first_occurrence_line }})",
         severity=RuleSeverity.ERROR,
         docs="""
-        It is not allowed to reuse the same name of the test case within the same suite in Robot Framework. 
+        It is not allowed to reuse the same name of the test case within the same suite in Robot Framework.
         Name matching is case-insensitive and ignores spaces and underscore characters.
         Duplicated test cases example::
-        
+
             *** Test Cases ***
             Test with name
                 No Operation
-            
+
             test_with Name  # it is a duplicate of 'Test with name'
                 No Operation
         """,
         added_in_version="1.0.0",
     ),
-    "0802": Rule(
+    "0802": DefaultRule(
         rule_id="0802",
         name="duplicated-keyword",
         msg="Multiple keywords with name '{{ name }}' (first occurrence in line {{ first_occurrence_line }})",
         severity=RuleSeverity.ERROR,
         docs="""
-        Do not define keywords with the same name inside the same file. Name matching is case-insensitive and 
+        Do not define keywords with the same name inside the same file. Name matching is case-insensitive and
         ignores spaces and underscore characters.
         Duplicated keyword names example::
-        
+
             *** Keywords ***
             Keyword
                 No Operation
-            
+
             keyword
                 No Operation
-            
+
             K_eywor d
                 No Operation
-            
+
         """,
         added_in_version="1.0.0",
     ),
-    "0803": Rule(
+    "0803": DefaultRule(
         rule_id="0803",
         name="duplicated-variable",
         msg="Multiple variables with name '{{ name }}' in Variables section (first occurrence in line "
@@ -85,9 +83,9 @@ rules = {
         "Note that Robot Framework is case-insensitive",
         severity=RuleSeverity.ERROR,
         docs="""
-        Variable names in Robot Framework are case-insensitive and ignore spaces and underscores. Following variables 
+        Variable names in Robot Framework are case-insensitive and ignore spaces and underscores. Following variables
         are duplicates::
-        
+
             *** Variables ***
             ${variable}    1
             ${VARIAble}    a
@@ -98,14 +96,14 @@ rules = {
         """,
         added_in_version="1.0.0",
     ),
-    "0804": Rule(
+    "0804": DefaultRule(
         rule_id="0804",
         name="duplicated-resource",
         msg="Multiple resource imports with path '{{ name }}' (first occurrence in line {{ first_occurrence_line }})",
         severity=RuleSeverity.WARNING,
         added_in_version="1.0.0",
     ),
-    "0805": Rule(
+    "0805": DefaultRule(
         rule_id="0805",
         name="duplicated-library",
         msg="Multiple library imports with name '{{ name }}' and identical arguments (first occurrence in line "
@@ -113,7 +111,7 @@ rules = {
         severity=RuleSeverity.WARNING,
         docs="""
         If you need to reimport library use alias::
-        
+
             *** Settings ***
             Library  RobotLibrary
             Library  RobotLibrary  AS  OtherRobotLibrary
@@ -121,40 +119,40 @@ rules = {
         """,
         added_in_version="1.0.0",
     ),
-    "0806": Rule(
+    "0806": DefaultRule(
         rule_id="0806",
         name="duplicated-metadata",
         msg="Duplicated metadata '{{ name }}' (first occurrence in line {{ first_occurrence_line }})",
         severity=RuleSeverity.WARNING,
         added_in_version="1.0.0",
     ),
-    "0807": Rule(
+    "0807": DefaultRule(
         rule_id="0807",
         name="duplicated-variables-import",
         msg="Duplicated variables import with path '{{ name }}' (first occurrence in line {{ first_occurrence_line }})",
         severity=RuleSeverity.WARNING,
         added_in_version="1.0.0",
     ),
-    "0808": Rule(
+    "0808": DefaultRule(
         rule_id="0808",
         name="section-already-defined",
         msg="'{{ section_name }}' section header already defined in file (first occurrence in line "
         "{{ first_occurrence_line }})",
         severity=RuleSeverity.WARNING,
         docs="""
-        Duplicated section in the file. Robot Framework will handle repeated sections but it is recommended to not 
+        Duplicated section in the file. Robot Framework will handle repeated sections but it is recommended to not
         duplicate them.
-        
+
         Example::
-        
+
             *** Test Cases ***
             My Test
                 Keyword
-            
+
             *** Keywords ***
             Keyword
                 No Operation
-            
+
             *** Test Cases ***  # duplicate
             Other Test
                 Keyword
@@ -162,7 +160,7 @@ rules = {
         """,
         added_in_version="1.0.0",
     ),
-    "0809": Rule(
+    "0809": DefaultRule(
         RuleParam(
             name="sections_order",
             default="settings,variables,testcases,keywords",
@@ -177,49 +175,49 @@ rules = {
         docs="""
         Sections should be defined in order set by ``sections_order``
         parameter (default: ``settings,variables,testcases,keywords``).
-        
+
         To change the default order use following option::
-        
+
             robocop --configure section-out-of-order:sections_order:comma,separated,list,of,sections
-        
-        where section should be case-insensitive name from the list: comments, settings, variables, testcases, keywords. 
+
+        where section should be case-insensitive name from the list: comments, settings, variables, testcases, keywords.
         Order of not configured sections is ignored.
-        
+
         Example::
-        
+
             *** Settings ***
-            
+
             *** Keywords ***
-            
+
             *** Test Cases ***  # it will report issue because Test Cases should be defined before Keywords
 
         """,
         added_in_version="1.0.0",
     ),
-    "0810": Rule(
+    "0810": DefaultRule(
         rule_id="0810",
         name="both-tests-and-tasks",
         msg="Both Task(s) and Test Case(s) section headers defined in file",
         severity=RuleSeverity.ERROR,
         docs="""
         The file contains both ``*** Test Cases ***`` and ``*** Tasks ***`` sections. Use only one of them. ::
-        
+
             *** Test Cases ***
-            
+
             *** Tasks ***
 
         """,
         added_in_version="1.0.0",
     ),
-    "0811": Rule(
+    "0811": DefaultRule(
         rule_id="0811",
         name="duplicated-argument-name",
         msg="Argument name '{{ argument_name }}' is already used",
         severity=RuleSeverity.ERROR,
         docs="""
-        Variable names in Robot Framework are case-insensitive and ignores spaces and underscores. Following arguments 
+        Variable names in Robot Framework are case-insensitive and ignores spaces and underscores. Following arguments
         are duplicates::
-        
+
             *** Keywords ***
             Keyword
                 [Arguments]    ${var}  ${VAR}  ${v_ar}  ${v ar}
@@ -228,21 +226,21 @@ rules = {
         """,
         added_in_version="1.11.0",
     ),
-    "0812": Rule(
+    "0812": DefaultRule(
         rule_id="0812",
         name="duplicated-assigned-var-name",
         msg="Assigned variable name '{{ variable_name }}' is already used",
         severity=RuleSeverity.INFO,
         docs="""
-        Variable names in Robot Framework are case-insensitive and ignores spaces and underscores. Following variables 
+        Variable names in Robot Framework are case-insensitive and ignores spaces and underscores. Following variables
         are duplicates::
-        
+
             *** Test Cases ***
             Test
                 ${var}  ${VAR}  ${v_ar}  ${v ar}  Keyword
-        
+
         It is possible to use `${_}` to note that variable name is not important and will not be used::
-        
+
             *** Keywords ***
             Get Middle Element
                 [Arguments]    ${list}
@@ -252,7 +250,7 @@ rules = {
         """,
         added_in_version="1.12.0",
     ),
-    "0813": Rule(
+    "0813": DefaultRule(
         rule_id="0813",
         name="duplicated-setting",
         msg="{{ error_msg }}",
@@ -260,11 +258,11 @@ rules = {
         docs="""
         Some settings can be used only once in a file. Only the first value is used.
         Example::
-        
+
             *** Settings ***
             Force Tags        F1
             Force Tags        F2  # this setting will be ignored
-        
+
         """,
         added_in_version="2.0.0",
     ),
@@ -297,7 +295,7 @@ class DuplicationsChecker(VisitorChecker):
         self.variable_imports = defaultdict(list)
         super().__init__()
 
-    def visit_File(self, node):  # noqa
+    def visit_File(self, node):  # noqa: N802
         self.test_cases = defaultdict(list)
         self.keywords = defaultdict(list)
         self.variables = defaultdict(list)
@@ -338,17 +336,17 @@ class DuplicationsChecker(VisitorChecker):
                     end_col=lib_token.end_col_offset + 1,
                 )
 
-    def visit_TestCase(self, node):  # noqa
+    def visit_TestCase(self, node):  # noqa: N802
         testcase_name = normalize_robot_name(node.name)
         self.test_cases[testcase_name].append(node)
         self.generic_visit(node)
 
-    def visit_Keyword(self, node):  # noqa
+    def visit_Keyword(self, node):  # noqa: N802
         keyword_name = normalize_robot_name(node.name)
         self.keywords[keyword_name].append(node)
         self.generic_visit(node)
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         assign = node.get_tokens(Token.ASSIGN)
         seen = set()
         for var in assign:
@@ -368,10 +366,10 @@ class DuplicationsChecker(VisitorChecker):
             else:
                 seen.add(name)
 
-    def visit_VariableSection(self, node):  # noqa
+    def visit_VariableSection(self, node):  # noqa: N802
         self.generic_visit(node)
 
-    def visit_Variable(self, node):  # noqa
+    def visit_Variable(self, node):  # noqa: N802
         if not node.name or get_errors(node):
             return
         var_name = normalize_robot_name(self.replace_chars(node.name, "${}@&"))
@@ -381,22 +379,22 @@ class DuplicationsChecker(VisitorChecker):
     def replace_chars(name, chars):
         return "".join(c for c in name if c not in chars)
 
-    def visit_ResourceImport(self, node):  # noqa
+    def visit_ResourceImport(self, node):  # noqa: N802
         if node.name:
             self.resources[node.name].append(node)
 
-    def visit_LibraryImport(self, node):  # noqa
+    def visit_LibraryImport(self, node):  # noqa: N802
         if not node.name:
             return
         lib_name = node.alias if node.alias else node.name
         name_with_args = lib_name + "".join(token.value for token in node.get_tokens(Token.ARGUMENT))
         self.libraries[name_with_args].append(node)
 
-    def visit_Metadata(self, node):  # noqa
+    def visit_Metadata(self, node):  # noqa: N802
         if node.name is not None:
             self.metadata[node.name + node.value].append(node)
 
-    def visit_VariablesImport(self, node):  # noqa
+    def visit_VariablesImport(self, node):  # noqa: N802
         if not node.name:
             return
         # only YAML files can't have arguments - covered in E0404 variables-import-with-args
@@ -405,7 +403,7 @@ class DuplicationsChecker(VisitorChecker):
         name_with_args = node.name + "".join(token.value for token in node.data_tokens[2:])
         self.variable_imports[name_with_args].append(node)
 
-    def visit_Arguments(self, node):  # noqa
+    def visit_Arguments(self, node):  # noqa: N802
         args = set()
         for arg in node.get_tokens(Token.ARGUMENT):
             orig, *_ = arg.value.split("=", maxsplit=1)
@@ -422,7 +420,7 @@ class DuplicationsChecker(VisitorChecker):
             else:
                 args.add(name)
 
-    def visit_Error(self, node):  # noqa
+    def visit_Error(self, node):  # noqa: N802
         for error in get_errors(node):
             if "is allowed only once" in error:
                 self.report(
@@ -446,7 +444,7 @@ class SectionHeadersChecker(VisitorChecker):
 
     @staticmethod
     def section_order_to_str(order):
-        by_index = sorted(list(order.items()), key=lambda x: x[1])
+        by_index = sorted(order.items(), key=lambda x: x[1])
         name_map = {
             Token.SETTING_HEADER: "Settings",
             Token.VARIABLE_HEADER: "Variables",
@@ -461,12 +459,12 @@ class SectionHeadersChecker(VisitorChecker):
                 order_str.append(mapped_name)
         return " > ".join(order_str)
 
-    def visit_File(self, node):  # noqa
+    def visit_File(self, node):  # noqa: N802
         self.sections_by_order = []
         self.sections_by_existence = {}
         super().visit_File(node)
 
-    def visit_SectionHeader(self, node):  # noqa
+    def visit_SectionHeader(self, node):  # noqa: N802
         section_name = node.type
         if section_name not in self.param("section-out-of-order", "sections_order"):
             return
@@ -476,9 +474,8 @@ class SectionHeadersChecker(VisitorChecker):
                 section_name = "TASK HEADER"
                 if Token.TESTCASE_HEADER in self.sections_by_existence:
                     self.report("both-tests-and-tasks", node=node, col=node.col_offset + 1, end_col=node.end_col_offset)
-            else:
-                if "TASK HEADER" in self.sections_by_existence:
-                    self.report("both-tests-and-tasks", node=node, col=node.col_offset + 1, end_col=node.end_col_offset)
+            elif "TASK HEADER" in self.sections_by_existence:
+                self.report("both-tests-and-tasks", node=node, col=node.col_offset + 1, end_col=node.end_col_offset)
         order_id = self.param("section-out-of-order", "sections_order")[section_name]
         if section_name in self.sections_by_existence:
             self.report(

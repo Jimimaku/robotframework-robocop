@@ -1,6 +1,5 @@
-"""
-Comments checkers
-"""
+"""Comments checkers"""
+
 import re
 from codecs import BOM_UTF8, BOM_UTF16_BE, BOM_UTF16_LE, BOM_UTF32_BE, BOM_UTF32_LE
 
@@ -8,7 +7,7 @@ from robot.api import Token
 from robot.utils import FileReader
 
 from robocop.checkers import RawFileChecker, VisitorChecker
-from robocop.rules import Rule, RuleParam, RuleSeverity
+from robocop.rules import DefaultRule, RuleParam, RuleSeverity
 from robocop.utils import ROBOT_VERSION
 
 
@@ -23,7 +22,7 @@ def regex(value):
 RULE_CATEGORY_ID = "07"
 
 rules = {
-    "0701": Rule(
+    "0701": DefaultRule(
         RuleParam(
             name="markers",
             default="todo,fixme",
@@ -50,7 +49,7 @@ rules = {
         """,
         added_in_version="1.0.0",
     ),
-    "0702": Rule(
+    "0702": DefaultRule(
         RuleParam(
             name="block",
             default="^###",
@@ -88,7 +87,7 @@ rules = {
         """,
         added_in_version="1.0.0",
     ),
-    "0703": Rule(
+    "0703": DefaultRule(
         rule_id="0703",
         name="invalid-comment",
         msg="Invalid comment. '#' needs to be first character in the cell. "
@@ -108,7 +107,7 @@ rules = {
         """,
         added_in_version="1.0.0",
     ),
-    "0704": Rule(
+    "0704": DefaultRule(
         rule_id="0704",
         name="ignored-data",
         msg="Ignored data found in file",
@@ -137,7 +136,7 @@ rules = {
         """,
         added_in_version="1.3.0",
     ),
-    "0705": Rule(
+    "0705": DefaultRule(
         rule_id="0705",
         name="bom-encoding-in-file",
         msg="This file contains BOM (Byte Order Mark) encoding not supported by Robot Framework",
@@ -176,16 +175,16 @@ class CommentChecker(VisitorChecker):
             self._block = self.param("missing-space-after-comment", "block")
         return self._block
 
-    def visit_Comment(self, node):  # noqa
+    def visit_Comment(self, node):  # noqa: N802
         self.find_comments(node)
 
-    def visit_TestCase(self, node):  # noqa
+    def visit_TestCase(self, node):  # noqa: N802
         self.check_invalid_comments(node.name, node)
         self.generic_visit(node)
 
-    visit_Keyword = visit_TestCase
+    visit_Keyword = visit_TestCase  # noqa: N815
 
-    def visit_Statement(self, node):  # noqa
+    def visit_Statement(self, node):  # noqa: N802
         self.find_comments(node)
 
     def find_comments(self, node):
@@ -228,14 +227,13 @@ class CommentChecker(VisitorChecker):
                 lineno=token.lineno,
                 col=token.col_offset + 1 + index,
             )
-        if content.startswith("#") and not self.is_block_comment(content):
-            if not content.startswith("# "):
-                self.report(
-                    "missing-space-after-comment",
-                    lineno=token.lineno,
-                    col=token.col_offset + 1,
-                    end_col=token.col_offset + len(content) + 1,
-                )
+        if content.startswith("#") and not self.is_block_comment(content) and not content.startswith("# "):
+            self.report(
+                "missing-space-after-comment",
+                lineno=token.lineno,
+                col=token.col_offset + 1,
+                end_col=token.col_offset + len(content) + 1,
+            )
 
     def is_block_comment(self, comment):
         return comment == "#" or self.block.match(comment) is not None
@@ -276,7 +274,7 @@ class IgnoredDataChecker(RawFileChecker):
     def check_line(self, line, lineno):
         if line.startswith(self.SECTION_HEADER):
             return True
-        if line.startswith(self.ROBOCOP_HEADER) or line.startswith(self.ROBOTIDY_HEADER):
+        if line.startswith((self.ROBOCOP_HEADER, self.ROBOTIDY_HEADER)):
             self.ignore_empty_lines = True
             return False
         if lineno == 1:

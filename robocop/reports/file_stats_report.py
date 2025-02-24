@@ -1,5 +1,3 @@
-from typing import Dict
-
 import robocop.reports
 from robocop.rules import Message
 from robocop.utils.misc import get_plural_form, get_string_diff
@@ -29,30 +27,28 @@ class FileStatsReport(robocop.reports.ComparableReport):
     def persist_result(self):
         return {"files_count": self.files_count, "files_with_issues": len(self.files_with_issues)}
 
-    def get_report(self, prev_results: Dict) -> str:
+    def get_report(self, prev_results: dict) -> str:
         if self.compare_runs and prev_results:
             return self.get_report_with_compare(prev_results)
         return self.get_report_without_compare()
 
-    def get_report_with_compare(self, prev_results: Dict) -> str:
+    def get_report_with_compare(self, prev_results: dict) -> str:
         plural_files = get_plural_form(self.files_count)
         prev_files_count = prev_results["files_count"]
         prev_files_with_issues = prev_results["files_with_issues"]
         if not self.files_count:
             if prev_files_count == 1:
                 return "\nNo files were processed. Previously 1 file was processed."
-            else:
-                return f"\nNo files were processed. Previously {prev_files_count} files were processed."
+            return f"\nNo files were processed. Previously {prev_files_count} files were processed."
         prev_count = f" ({get_string_diff(prev_files_count, self.files_count)})"
         processed_files_summary = f"\nProcessed {self.files_count}{prev_count} file{plural_files}"
         if not self.files_with_issues:
             if prev_files_with_issues == 1:
                 return f"{processed_files_summary} but no issues were found. Previously there was 1 file with issues."
-            else:
-                return (
-                    f"{processed_files_summary} but no issues were found. "
-                    f"Previously there were {prev_files_with_issues} files with issues."
-                )
+            return (
+                f"{processed_files_summary} but no issues were found. "
+                f"Previously there were {prev_files_with_issues} files with issues."
+            )
         plural_files_with_issues = get_plural_form(len(self.files_with_issues))
         prev_count = f" ({get_string_diff(prev_files_with_issues, len(self.files_with_issues))})"
         return (

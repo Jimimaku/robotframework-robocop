@@ -11,10 +11,11 @@ Development Status :: 5 - Production/Stable
 License :: OSI Approved :: Apache Software License
 Operating System :: OS Independent
 Programming Language :: Python
-Programming Language :: Python :: 3.8
 Programming Language :: Python :: 3.9
 Programming Language :: Python :: 3.10
 Programming Language :: Python :: 3.11
+Programming Language :: Python :: 3.12
+Programming Language :: Python :: 3.13
 Framework :: Robot Framework
 Framework :: Robot Framework :: Tool
 Topic :: Software Development :: Testing
@@ -47,11 +48,11 @@ setup(
     keywords=KEYWORDS,
     packages=["robocop"],
     project_urls=PROJECT_URLS,
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     include_package_data=True,
     install_requires=[
         "jinja2>=3.0,<4.0",
-        "robotframework>=3.2.2",
+        "robotframework>=3.2.2,<7.3",
         "pathspec>=0.9,<0.13",
         "tomli>=2.0.0",
         "pytz>=2022.7",
@@ -60,7 +61,7 @@ setup(
     ],
     extras_require={
         "dev": [
-            "black",
+            "ruff",
             "coverage",
             "pytest",
             "pyyaml",

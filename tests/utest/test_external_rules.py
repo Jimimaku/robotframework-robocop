@@ -14,6 +14,7 @@ TEST_DATA = Path(__file__).parent.parent / "test_data" / "ext_rules"
 EXT_MODULE = str(TEST_DATA / "ext_rule_module")
 EXT_MODULE_SIMPLE = str(TEST_DATA / "ext_rule_module_simple_import")
 EXT_MODULE_ROBOCOP_IMPORT = str(TEST_DATA / "ext_rule_module_import_robocop")
+EXT_MODULE_WITH_RELATIVE_IMPORT = str(TEST_DATA / "ext_rule_module_with_relative_import")
 
 
 @contextmanager
@@ -32,7 +33,7 @@ def clear_imported_module(module):
 
 @contextmanager
 def working_directory(path):
-    """Changes working directory and returns to previous on exit"""
+    """Change working directory and return to previous on exit"""
     prev_cwd = Path.cwd()
     os.chdir(path)
     try:
@@ -89,6 +90,13 @@ class TestExternalRules:
             robocop_pre_load.load_checkers()
             assert "9904" in robocop_pre_load.rules
             assert "9903" not in robocop_pre_load.rules
+
+    def test_loading_external_rule_including_relative_import(self, robocop_pre_load):
+        clear_imported_module("RobocopRules")
+        with add_sys_path(EXT_MODULE_WITH_RELATIVE_IMPORT):
+            robocop_pre_load.config.ext_rules = {EXT_MODULE_WITH_RELATIVE_IMPORT}
+            robocop_pre_load.load_checkers()
+            assert "9905" in robocop_pre_load.rules
 
     @pytest.mark.parametrize("config_dir", ["config_robocop", "config_pyproject"])
     def test_loading_external_rule_in_robocop_config(self, robocop_pre_load, config_dir):
@@ -219,7 +227,7 @@ class TestDeprecatedRules:
 
 class TestVersionMatching:
     @pytest.mark.parametrize(
-        "rf_version, rules_status",
+        ("rf_version", "rules_status"),
         [
             (
                 "4.0",

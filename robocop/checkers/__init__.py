@@ -32,13 +32,17 @@ Each rule has a unique 4-digit ID that contains:
 Rule ID as well as rule name can be used to refer to the rule (e.g. in include/exclude statements,
 configurations etc.). You can optionally configure rule severity or other parameters.
 """
+
+from __future__ import annotations
+
 import ast
 import importlib.util
 import inspect
+import sys
 from collections import defaultdict
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 try:
     from robot.api.parsing import ModelVisitor
@@ -67,7 +71,7 @@ class BaseChecker:
         self.source = None
         self.lines = None
         self.issues = []
-        self.rules: Dict[str, "Rule"] = {}
+        self.rules: dict[str, Rule] = {}
         self.templated_suite = False
 
     def param(self, rule, param_name):
@@ -91,7 +95,7 @@ class BaseChecker:
         extended_disablers=None,
         sev_threshold_value=None,
         severity=None,
-        source: Optional[str] = None,
+        source: str | None = None,
         **kwargs,
     ):
         rule_def = self.rules.get(rule, None)
@@ -119,9 +123,9 @@ class BaseChecker:
             self.issues.append(message)
 
 
-class VisitorChecker(BaseChecker, ModelVisitor):  # noqa
-    def scan_file(self, ast_model, filename, in_memory_content, templated=False) -> List["Message"]:
-        self.issues: List["Message"] = []
+class VisitorChecker(BaseChecker, ModelVisitor):
+    def scan_file(self, ast_model, filename, in_memory_content, templated=False) -> list[Message]:
+        self.issues: list[Message] = []
         self.source = filename
         self.templated_suite = templated
         if in_memory_content is not None:
@@ -131,14 +135,15 @@ class VisitorChecker(BaseChecker, ModelVisitor):  # noqa
         self.visit_File(ast_model)
         return self.issues
 
-    def visit_File(self, node):  # noqa
+    def visit_File(self, node):  # noqa: N802
         """Perform generic ast visit on file node."""
         self.generic_visit(node)
 
 
 class ProjectChecker(VisitorChecker):
-    def scan_project(self) -> List["Message"]:
-        """Perform checks on the whole project.
+    def scan_project(self) -> list[Message]:
+        """
+        Perform checks on the whole project.
 
         This method is called after visiting all files. Accumulating any necessary data for check depends on
         the checker.
@@ -146,9 +151,9 @@ class ProjectChecker(VisitorChecker):
         raise NotImplementedError
 
 
-class RawFileChecker(BaseChecker):  # noqa
-    def scan_file(self, ast_model, filename, in_memory_content, templated=False) -> List["Message"]:
-        self.issues: List["Message"] = []
+class RawFileChecker(BaseChecker):
+    def scan_file(self, ast_model, filename, in_memory_content, templated=False) -> list[Message]:
+        self.issues: list[Message] = []
         self.source = filename
         self.templated_suite = templated
         if in_memory_content is not None:
@@ -172,7 +177,7 @@ class RawFileChecker(BaseChecker):  # noqa
         raise NotImplementedError
 
 
-def is_checker(checker_class_def: Tuple) -> bool:
+def is_checker(checker_class_def: tuple) -> bool:
     return issubclass(checker_class_def[1], BaseChecker) and getattr(checker_class_def[1], "reports", False)
 
 
@@ -184,7 +189,7 @@ class RobocopImporter:
         self.imported_modules = set()
         self.seen_modules = set()
         self.seen_checkers = defaultdict(list)
-        self.deprecated_rules = dict()
+        self.deprecated_rules = {}
 
     def get_initialized_checkers(self):
         yield from self._get_checkers_from_modules(self.get_internal_modules(), is_community=False)
@@ -192,12 +197,17 @@ class RobocopImporter:
         yield from self._get_checkers_from_modules(self.get_external_modules(), is_community=False)
 
     def get_internal_modules(self):
-        return self.modules_from_paths([file for file in self.internal_checkers_dir.iterdir()], recursive=False)
+        return self.modules_from_paths(list(self.internal_checkers_dir.iterdir()), recursive=False)
 
     def get_community_modules(self):
         return self.modules_from_paths([self.community_checkers_dir], recursive=True)
 
     def get_external_modules(self):
+        for ext_rule_path in self.external_rules_paths:
+            # Allow relative imports in external rules folder
+            sys.path.append(ext_rule_path)
+            sys.path.append(str(Path(ext_rule_path).parent))
+
         return self.modules_from_paths([*self.external_rules_paths], recursive=True)
 
     def _get_checkers_from_modules(self, modules, is_community):
@@ -216,13 +226,14 @@ class RobocopImporter:
                 yield checker_instance
 
     def is_checker_already_imported(self, checker):
-        """Check if checker was already imported.
+        """
+        Check if checker was already imported.
 
-        Checker name does not have to be unique, but it should use different rules."""
+        Checker name does not have to be unique, but it should use different rules.
+        """
         checker_name = checker.__class__.__name__
-        if checker_name in self.seen_checkers:
-            if sorted(checker.rules.keys()) in self.seen_checkers[checker_name]:
-                return True
+        if checker_name in self.seen_checkers and sorted(checker.rules.keys()) in self.seen_checkers[checker_name]:
+            return True
         self.seen_checkers[checker_name].append(sorted(checker.rules.keys()))
         return False
 
@@ -247,9 +258,11 @@ class RobocopImporter:
 
     @staticmethod
     def _import_module_from_file(file_path):
-        """Import Python file as module.
+        """
+        Import Python file as module.
 
-        importlib does not support importing Python files directly, and we need to create module specification first."""
+        importlib does not support importing Python files directly, and we need to create module specification first.
+        """
         spec = importlib.util.spec_from_file_location(file_path.stem, file_path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -257,7 +270,8 @@ class RobocopImporter:
 
     @staticmethod
     def _find_imported_modules(module: ast.Module):
-        """Return modules imported using `import module.dot.submodule` syntax.
+        """
+        Return modules imported using `import module.dot.submodule` syntax.
 
         `from . import` are ignored - they are later covered by exploring submodules in the same namespace.
         """
@@ -270,7 +284,7 @@ class RobocopImporter:
         """Discover Python imports in the file using ast module."""
         try:
             parsed = ast.parse(file_path.read_bytes())
-        except Exception:  # noqa
+        except:  # noqa: E722
             return
         for import_name in self._find_imported_modules(parsed):
             if import_name not in self.imported_modules:
@@ -288,7 +302,7 @@ class RobocopImporter:
                 yield module_name, rule
 
     @staticmethod
-    def get_rules_from_module(module) -> Dict:
+    def get_rules_from_module(module) -> dict:
         module_rules = getattr(module, "rules", {})
         if not isinstance(module_rules, dict):
             return {}
@@ -301,13 +315,13 @@ class RobocopImporter:
             rules[rule.name] = rule
         return rules
 
-    def register_deprecated_rules(self, module_rules: Dict[str, "Rule"]):
+    def register_deprecated_rules(self, module_rules: dict[str, Rule]):
         for rule_name, rule_def in module_rules.items():
             if rule_def.deprecated:
                 self.deprecated_rules[rule_name] = rule_def
                 self.deprecated_rules[rule_def.rule_id] = rule_def
 
-    def get_checkers_from_module(self, module, is_community: bool) -> List:
+    def get_checkers_from_module(self, module, is_community: bool) -> list:
         classes = inspect.getmembers(module, inspect.isclass)
         checkers = [checker for checker in classes if is_checker(checker)]
         category_id = getattr(module, "RULE_CATEGORY_ID", None)
@@ -333,7 +347,7 @@ class RobocopImporter:
         return checker_instances
 
 
-def init(linter: "Robocop"):
+def init(linter: Robocop):
     robocop_importer = RobocopImporter(linter.config.ext_rules)
     for checker in robocop_importer.get_initialized_checkers():
         linter.register_checker(checker)

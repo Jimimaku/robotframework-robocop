@@ -1,8 +1,9 @@
-import collections
+from __future__ import annotations
+
 import itertools
 import re
 from functools import total_ordering
-from typing import List, Optional, SupportsInt, Tuple, Union
+from typing import SupportsInt
 
 VERSION_PATTERN = r"""
     v?
@@ -25,17 +26,16 @@ VERSION_PATTERN = r"""
 """
 
 
-def _get_comparison_key(release: Tuple[int, ...]):
+def _get_comparison_key(release: tuple[int, ...]):
     # When we compare a release version, we want to compare it with all the
     # trailing zeros removed. So we'll use a reverse the list, drop all the now
     # leading zeros until we come to something non zero, then take the rest
     # re-reverse it back into the correct order and make it a tuple and use
     # that for our sorting key.
-    _release = tuple(reversed(list(itertools.dropwhile(lambda x: x == 0, reversed(release)))))
-    return _release
+    return tuple(reversed(list(itertools.dropwhile(lambda x: x == 0, reversed(release)))))
 
 
-def _parse_letter_version(letter: str, number: Union[str, bytes, SupportsInt]) -> Optional[Tuple[str, int]]:
+def _parse_letter_version(letter: str, number: str | bytes | SupportsInt) -> tuple[str, int] | None:
     if letter:
         # We consider there to be an implicit 0 in a pre-release if there is
         # not a numeral associated with it.
@@ -120,7 +120,7 @@ _prefix_regex = re.compile(r"^([0-9]+)((?:a|b|c|rc)[0-9]+)$")
 
 
 def _version_split(version: str):
-    result: List[str] = []
+    result: list[str] = []
     for item in version.split("."):
         match = _prefix_regex.search(item)
         if match:
@@ -197,7 +197,7 @@ class VersionSpecifier:
         if not match:
             raise ValueError(f"Invalid specifier: '{spec}'")
 
-        self._spec: Tuple[str, str] = (
+        self._spec: tuple[str, str] = (
             match.group("operator").strip(),
             match.group("version").strip(),
         )
@@ -214,8 +214,7 @@ class VersionSpecifier:
         return version
 
     def _get_operator(self, op: str):
-        operator_callable = getattr(self, f"_compare_{self._operators[op]}")
-        return operator_callable
+        return getattr(self, f"_compare_{self._operators[op]}")
 
     @property
     def operator(self) -> str:
@@ -264,10 +263,9 @@ class VersionSpecifier:
             padded_spec, padded_prospective = _pad_version(split_spec, shortened_prospective)
 
             return padded_prospective == padded_spec
-        else:
-            # Convert our spec string into a Version
-            spec_version = Version(spec)
-            return prospective == spec_version
+        # Convert our spec string into a Version
+        spec_version = Version(spec)
+        return prospective == spec_version
 
     def _compare_not_equal(self, prospective, spec: str) -> bool:
         return not self._compare_equal(prospective, spec)

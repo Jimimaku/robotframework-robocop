@@ -1,11 +1,12 @@
-"""
-Naming checkers
-"""
+"""Naming checkers"""
+
+from __future__ import annotations
+
 import re
 import string
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import TYPE_CHECKING
 
 from robot.api import Token
 from robot.errors import VariableError
@@ -14,7 +15,7 @@ from robot.parsing.model.statements import Arguments
 from robot.variables.search import search_variable
 
 from robocop.checkers import VisitorChecker
-from robocop.rules import Rule, RuleParam, RuleSeverity
+from robocop.rules import DefaultRule, RuleParam, RuleSeverity
 from robocop.utils import (
     ROBOT_VERSION,
     find_robot_vars,
@@ -29,10 +30,13 @@ from robocop.utils.misc import _is_var_scope_local, remove_nested_variables
 from robocop.utils.run_keywords import iterate_keyword_names
 from robocop.utils.variable_matcher import VariableMatches
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 RULE_CATEGORY_ID = "03"
 
 rules = {
-    "0301": Rule(
+    "0301": DefaultRule(
         RuleParam(
             name="pattern",
             default=re.compile(r"[\.\?]"),
@@ -55,7 +59,7 @@ rules = {
         would report any occurrence of ``@[`` characters.
         """,
     ),
-    "0302": Rule(
+    "0302": DefaultRule(
         RuleParam(
             name="convention",
             default="each_word_capitalized",
@@ -96,7 +100,7 @@ rules = {
                 Provide payment method
                 Click 'Next' button
                 [Teardown]  Log form data
-        
+
         The rule also accepts another parameter ``pattern`` which can be used to configure words
         that are accepted in the keyword name, even though they violate the case convention.
 
@@ -106,7 +110,7 @@ rules = {
             Go To robocop.readthedocs.io Page
         """,
     ),
-    "0303": Rule(
+    "0303": DefaultRule(
         rule_id="0303",
         name="keyword-name-is-reserved-word",
         msg="'{{ keyword_name }}' is a reserved keyword{{ error_msg }}",
@@ -128,7 +132,7 @@ rules = {
           - FINALLY
         """,
     ),
-    "0305": Rule(
+    "0305": DefaultRule(
         rule_id="0305",
         name="underscore-in-keyword-name",
         msg="Underscores in keyword name '{{ keyword_name }}' can be replaced with spaces",
@@ -148,7 +152,7 @@ rules = {
             Keyword Without Underscores
         """,
     ),
-    "0306": Rule(
+    "0306": DefaultRule(
         rule_id="0306",
         name="setting-name-not-in-title-case",
         msg="Setting name '{{ setting_name }}' should use title or upper case",
@@ -176,7 +180,7 @@ rules = {
                 Step
         """,
     ),
-    "0307": Rule(
+    "0307": DefaultRule(
         rule_id="0307",
         name="section-name-invalid",
         msg="Section name should be in format '{{ section_title_case }}' or '{{ section_upper_case }}'",
@@ -194,7 +198,7 @@ rules = {
 
         """,
     ),
-    "0308": Rule(
+    "0308": DefaultRule(
         rule_id="0308",
         name="not-capitalized-test-case-title",
         msg="Test case '{{ test_name }}' title should start with capital letter",
@@ -212,14 +216,14 @@ rules = {
             validate user details
         """,
     ),
-    "0309": Rule(
+    "0309": DefaultRule(
         rule_id="0309",
         name="section-variable-not-uppercase",
         msg="Section variable '{{ variable_name }}' name should be uppercase",
         severity=RuleSeverity.WARNING,
         added_in_version="1.4.0",
     ),
-    "0310": Rule(
+    "0310": DefaultRule(
         rule_id="0310",
         name="non-local-variables-should-be-uppercase",
         msg="Test, suite and global variables should be uppercase",
@@ -245,7 +249,7 @@ rules = {
             Set Global Variable  ${my_var${NESTED}}  1
         """,
     ),
-    "0311": Rule(
+    "0311": DefaultRule(
         rule_id="0311",
         name="else-not-upper-case",
         msg="ELSE and ELSE IF should be upper case",
@@ -277,7 +281,7 @@ rules = {
                     RETURN  Cold
         """,
     ),
-    "0312": Rule(
+    "0312": DefaultRule(
         rule_id="0312",
         name="keyword-name-is-empty",
         msg="Keyword name should not be empty",
@@ -291,7 +295,7 @@ rules = {
                 Log To Console  hi
         """,
     ),
-    "0313": Rule(
+    "0313": DefaultRule(
         rule_id="0313",
         name="test-case-name-is-empty",
         msg="Test case name should not be empty",
@@ -305,7 +309,7 @@ rules = {
                 Log To Console  hello
         """,
     ),
-    "0314": Rule(
+    "0314": DefaultRule(
         rule_id="0314",
         name="empty-library-alias",
         msg="Library alias should not be empty",
@@ -325,7 +329,7 @@ rules = {
              Library  CustomLibrary  AS
         """,
     ),
-    "0315": Rule(
+    "0315": DefaultRule(
         rule_id="0315",
         name="duplicated-library-alias",
         msg="Library alias should not be the same as original name",
@@ -339,7 +343,7 @@ rules = {
              Library  CustomLibrary  AS  Custom Library  # same as library name (spaces are ignored)
         """,
     ),
-    "0316": Rule(
+    "0316": DefaultRule(
         rule_id="0316",
         name="possible-variable-overwriting",
         msg="Variable '{{ variable_name }}' may overwrite similar variable inside '{{ block_name }}' {{ block_type }}. "
@@ -360,7 +364,7 @@ rules = {
         underscores and whitespaces are ignored.
         """,
     ),
-    "0317": Rule(
+    "0317": DefaultRule(
         rule_id="0317",
         name="hyphen-in-variable-name",
         msg="Use underscore in variable name '{{ variable_name }}' instead of hyphens to "
@@ -382,7 +386,7 @@ rules = {
             ${var2}  Set Variable  ${${var}_${var2}}
         """,
     ),
-    "0318": Rule(
+    "0318": DefaultRule(
         rule_id="0318",
         name="bdd-without-keyword-call",
         msg="BDD reserved keyword '{{ keyword_name }}' not followed by any keyword{{ error_msg }}",
@@ -407,7 +411,7 @@ rules = {
         Since those words are used for BDD style, it's also recommended not to use them within the user keyword name.
         """,
     ),
-    "0319": Rule(
+    "0319": DefaultRule(
         rule_id="0319",
         name="deprecated-statement",
         msg="'{{ statement_name }}' is deprecated since Robot Framework version "
@@ -420,7 +424,7 @@ rules = {
         For example, ``Run Keyword`` and ``Continue For Loop`` keywords or ``[Return]`` setting.
         """,
     ),
-    "0320": Rule(
+    "0320": DefaultRule(
         RuleParam(
             name="pattern",
             default=re.compile(r"[\.\?]"),
@@ -443,7 +447,7 @@ rules = {
         pattern would report any occurrence of ``@[`` characters.
         """,
     ),
-    "0321": Rule(
+    "0321": DefaultRule(
         rule_id="0321",
         name="deprecated-with-name",
         msg=(
@@ -468,7 +472,7 @@ rules = {
             Library    Collections    AS    AliasedName
         """,
     ),
-    "0322": Rule(
+    "0322": DefaultRule(
         rule_id="0322",
         name="deprecated-singular-header",
         msg="'{{ singular_header }}' singular header form is deprecated since RF 6.0 and "
@@ -481,14 +485,14 @@ rules = {
         is available at https://github.com/robotframework/robotframework/issues/4431
         """,
     ),
-    "0323": Rule(
+    "0323": DefaultRule(
         rule_id="0323",
         name="inconsistent-variable-name",
         msg="Variable '{{ name }}' has inconsistent naming. First used as '{{ first_use }}'",
         severity=RuleSeverity.WARNING,
         added_in_version="3.2.0",
         docs="""
-        Variable names are case-insensitive and ignore underscores and spaces. It is possible to 
+        Variable names are case-insensitive and ignore underscores and spaces. It is possible to
         write the variable in multiple ways and it will be a valid Robot Framework code. However,
         it makes it harder to maintain the code that does not follow the consistent naming.
 
@@ -505,7 +509,7 @@ rules = {
                 END
         """,
     ),
-    "0324": Rule(
+    "0324": DefaultRule(
         rule_id="0324",
         name="overwriting-reserved-variable",
         msg="{{ var_or_arg }} '{{ variable_name }}' overwrites reserved variable '{{ reserved_variable }}'",
@@ -518,7 +522,7 @@ rules = {
         `Robot Framework User Guide <https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html#automatic-variables>`_
         """,
     ),
-    "0325": Rule(
+    "0325": DefaultRule(
         rule_id="0325",
         name="invalid-section",
         msg="Invalid section '{{ invalid_section }}'. Consider using --language parameter if the file is defined with different language",
@@ -538,7 +542,7 @@ rules = {
                 Log   Błąd dostępu
         """,
     ),
-    "0326": Rule(
+    "0326": DefaultRule(
         rule_id="0326",
         name="mixed-task-test-settings",
         msg="Use {{ task_or_test }}-related setting '{{ setting }}' if {{ tasks_or_tests }} section is used",
@@ -551,7 +555,7 @@ rules = {
         Similarly, use test-related settings when using ``*** Test Cases ***`` section.
         """,
     ),
-    "0327": Rule(
+    "0327": DefaultRule(
         rule_id="0327",
         name="replace-set-variable-with-var",
         msg="{{ set_variable_keyword }} can be replaced with VAR",
@@ -561,9 +565,9 @@ rules = {
         docs="""
         Starting from Robot Framework 7.0, it is possible to create variables inside tests and user keywords using the
         VAR syntax. The VAR syntax is recommended over previously existing keywords.
-        
+
         Example with Set Variable keywords::
-        
+
           *** Keywords ***
           Set Variables To Different Scopes
               Set Local Variable    ${local}    value
@@ -571,9 +575,9 @@ rules = {
               Set Task Variable    ${TASK_VAR}    value
               Set Suite Variable    ${SUITE_VAR}    value
               Set Global Variable    ${GLOBAL_VAR}    value
-        
+
         Can be now rewritten to::
-        
+
           *** Keywords ***
           Set Variables To Different Scopes
               VAR    ${local}    value
@@ -584,7 +588,7 @@ rules = {
 
         """,
     ),
-    "0328": Rule(
+    "0328": DefaultRule(
         rule_id="0328",
         name="replace-create-with-var",
         msg="{{ create_keyword }} can be replaced with VAR",
@@ -594,21 +598,21 @@ rules = {
         docs="""
         Starting from Robot Framework 7.0, it is possible to create variables inside tests and user keywords using the
         VAR syntax. The VAR syntax is recommended over previously existing keywords.
-        
+
         Example with Create keywords::
 
           *** Keywords ***
           Create Variables
               @{list}    Create List    a  b
               &{dict}    Create Dictionary    key=value
-        
+
         Can be now rewritten to::
-        
+
           *** Keywords ***
           Create Variables
               VAR    @{list}    a  b
               VAR    &{dict}    key=value
-        
+
         """,
     ),
 }
@@ -629,7 +633,7 @@ class InvalidCharactersInNameChecker(VisitorChecker):
         "not-allowed-char-in-name",
     )
 
-    def visit_File(self, node):
+    def visit_File(self, node):  # noqa: N802
         source = node.source if node.source else self.source
         if source:
             suite_name = Path(source).stem
@@ -646,7 +650,8 @@ class InvalidCharactersInNameChecker(VisitorChecker):
         super().visit_File(node)
 
     def check_if_pattern_in_node_name(self, node, name_of_node, is_keyword=False):
-        """Search if regex pattern found from node name.
+        """
+        Search if regex pattern found from node name.
         Skips embedded variables from keyword name
         """
         node_name = node.name
@@ -683,10 +688,10 @@ class InvalidCharactersInNameChecker(VisitorChecker):
                 end_col=node.col_offset + iter.end(0) + 1,
             )
 
-    def visit_TestCaseName(self, node):  # noqa
+    def visit_TestCaseName(self, node):  # noqa: N802
         self.check_if_pattern_in_node_name(node, "test case")
 
-    def visit_KeywordName(self, node):  # noqa
+    def visit_KeywordName(self, node):  # noqa: N802
         self.check_if_pattern_in_node_name(node, "keyword", is_keyword=True)
 
 
@@ -731,39 +736,39 @@ class KeywordNamingChecker(VisitorChecker):
         for keyword in iterate_keyword_names(node, name_token_type):
             self.check_keyword_naming(keyword.value, keyword)
 
-    def visit_Setup(self, node):  # noqa
+    def visit_Setup(self, node):  # noqa: N802
         self.check_bdd_keywords(node.name, node)
         self.check_keyword_naming_with_subkeywords(node, Token.NAME)
 
-    visit_TestTeardown = visit_SuiteTeardown = visit_Teardown = visit_TestSetup = visit_SuiteSetup = visit_Setup
+    visit_TestTeardown = visit_SuiteTeardown = visit_Teardown = visit_TestSetup = visit_SuiteSetup = visit_Setup  # noqa: N815
 
-    def visit_Template(self, node):  # noqa
+    def visit_Template(self, node):  # noqa: N802
         if node.value:
             name_token = node.get_token(Token.NAME)
             self.check_keyword_naming(node.value, name_token)
         self.generic_visit(node)
 
-    visit_TestTemplate = visit_Template
+    visit_TestTemplate = visit_Template  # noqa: N815
 
-    def visit_Keyword(self, node):  # noqa
+    def visit_Keyword(self, node):  # noqa: N802
         if not node.name:
             self.report("keyword-name-is-empty", node=node)
         else:
             self.check_keyword_naming(node.name, node)
         self.generic_visit(node)
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         if self.inside_if_block and node.keyword and node.keyword.lower() in self.else_statements:
             self.report("else-not-upper-case", node=node, col=keyword_col(node))
         self.check_keyword_naming_with_subkeywords(node, Token.KEYWORD)
         self.check_bdd_keywords(node.keyword, node)
 
-    def visit_If(self, node):  # noqa
+    def visit_If(self, node):  # noqa: N802
         self.inside_if_block = True
         self.generic_visit(node)
         self.inside_if_block = False
 
-    def check_keyword_naming(self, keyword_name, node):  # noqa
+    def check_keyword_naming(self, keyword_name, node):
         if not keyword_name or keyword_name.lstrip().startswith("#"):
             return
         if keyword_name == r"/":  # old for loop, / are interpreted as keywords
@@ -841,10 +846,10 @@ class SettingsNamingChecker(VisitorChecker):
 
     def __init__(self):
         self.section_name_pattern = re.compile(r"\*\*\*\s.+\s\*\*\*")
-        self.task_section: Optional[bool] = None
+        self.task_section: bool | None = None
         super().__init__()
 
-    def visit_InvalidSection(self, node):  # noqa
+    def visit_InvalidSection(self, node):  # noqa: N802
         name = node.header.data_tokens[0].value
         invalid_header = node.header.get_token(Token.INVALID_HEADER)
         if "Resource file with" in invalid_header.error:
@@ -858,7 +863,7 @@ class SettingsNamingChecker(VisitorChecker):
                 end_col=node.header.end_col_offset + 1,
             )
 
-    def visit_SectionHeader(self, node):  # noqa
+    def visit_SectionHeader(self, node):  # noqa: N802
         name = node.data_tokens[0].value
         if not self.section_name_pattern.match(name) or not (name.istitle() or name.isupper()):
             valid_name = f"*** {node.name.title()} ***"
@@ -870,7 +875,7 @@ class SettingsNamingChecker(VisitorChecker):
                 end_col=node.col_offset + len(name) + 1,
             )
 
-    def visit_File(self, node):  # noqa
+    def visit_File(self, node):  # noqa: N802
         self.task_section = None
         for section in node.sections:
             if isinstance(section, TestCaseSection):
@@ -883,37 +888,19 @@ class SettingsNamingChecker(VisitorChecker):
                 break
         super().visit_File(node)
 
-    def visit_Setup(self, node):  # noqa
+    def visit_Setup(self, node):  # noqa: N802
         self.check_setting_name(node.data_tokens[0].value, node)
         self.check_settings_consistency(node.data_tokens[0].value, node)
 
-    visit_SuiteSetup = (
-        visit_TestSetup
-    ) = (
-        visit_Teardown
-    ) = (
-        visit_SuiteTeardown
-    ) = (
-        visit_TestTeardown
-    ) = (
-        visit_TestTimeout
-    ) = (
-        visit_TestTemplate
-    ) = (
-        visit_TestTags
-    ) = (
-        visit_ForceTags
-    ) = (
-        visit_DefaultTags
-    ) = (
-        visit_ResourceImport
-    ) = (
-        visit_VariablesImport
-    ) = (
-        visit_Documentation
-    ) = visit_Tags = visit_Timeout = visit_Template = visit_Arguments = visit_ReturnSetting = visit_Return = visit_Setup
+    visit_SuiteSetup = visit_TestSetup = visit_Teardown = visit_SuiteTeardown = visit_TestTeardown = (  # noqa: N815
+        visit_TestTimeout  # noqa: N815
+    ) = visit_TestTemplate = visit_TestTags = visit_ForceTags = visit_DefaultTags = visit_ResourceImport = (  # noqa: N815
+        visit_VariablesImport  # noqa: N815
+    ) = visit_Documentation = visit_Tags = visit_Timeout = visit_Template = visit_Arguments = visit_ReturnSetting = (  # noqa: N815
+        visit_Return  # noqa: N815
+    ) = visit_Setup
 
-    def visit_LibraryImport(self, node):  # noqa
+    def visit_LibraryImport(self, node):  # noqa: N802
         self.check_setting_name(node.data_tokens[0].value, node)
         if ROBOT_VERSION.major < 6:
             arg_nodes = node.get_tokens(Token.ARGUMENT)
@@ -927,15 +914,14 @@ class SettingsNamingChecker(VisitorChecker):
             for arg in node.get_tokens(Token.ARGUMENT):
                 if arg.value and arg.value in self.ALIAS_TOKENS_VALUES:
                     self.report("empty-library-alias", node=arg, col=arg.col_offset + 1)
-        else:
-            if node.alias.replace(" ", "") == node.name.replace(" ", ""):  # New Name == NewName
-                name_token = node.get_tokens(Token.NAME)[-1]
-                self.report(
-                    "duplicated-library-alias",
-                    node=name_token,
-                    col=name_token.col_offset + 1,
-                    end_col=name_token.end_col_offset + 1,
-                )
+        elif node.alias.replace(" ", "") == node.name.replace(" ", ""):  # New Name == NewName
+            name_token = node.get_tokens(Token.NAME)[-1]
+            self.report(
+                "duplicated-library-alias",
+                node=name_token,
+                col=name_token.col_offset + 1,
+                end_col=name_token.end_col_offset + 1,
+            )
 
     def check_setting_name(self, name, node):
         if not (name.istitle() or name.isupper()):
@@ -975,7 +961,7 @@ class TestCaseNamingChecker(VisitorChecker):
         "test-case-name-is-empty",
     )
 
-    def visit_TestCase(self, node):  # noqa
+    def visit_TestCase(self, node):  # noqa: N802
         if not node.name:
             self.report("test-case-name-is-empty", node=node)
         else:
@@ -1027,12 +1013,12 @@ class VariableNamingChecker(VisitorChecker):
         # "options": "&{OPTIONS}", This variable is widely used and is relatively safe to overwrite
     }
 
-    def visit_Keyword(self, node):  # noqa
+    def visit_Keyword(self, node):  # noqa: N802
         name_token = node.header.get_token(Token.KEYWORD_NAME)
         self.parse_embedded_arguments(name_token)
         self.generic_visit(node)
 
-    def visit_Variable(self, node):  # noqa
+    def visit_Variable(self, node):  # noqa: N802
         token = node.data_tokens[0]
         try:
             var_name = search_variable(token.value).base
@@ -1052,7 +1038,7 @@ class VariableNamingChecker(VisitorChecker):
             )
         self.check_for_reserved_naming_or_hyphen(token, "Variable")
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         for token in node.get_tokens(Token.ASSIGN):
             self.check_for_reserved_naming_or_hyphen(token, "Variable", is_assign=True)
         if not node.keyword:
@@ -1083,23 +1069,23 @@ class VariableNamingChecker(VisitorChecker):
                 end_col=token.end_col_offset + 1,
             )
 
-    def visit_Var(self, node):  # noqa
+    def visit_Var(self, node):  # noqa: N802
         if node.errors:  # for example invalid variable definition like $var}
             return
         variable = node.get_token(Token.VARIABLE)
         if not variable:
             return
         self.check_for_reserved_naming_or_hyphen(variable, "Variable", is_assign=True)
-        # TODO Check supported syntax for variable, ie ${{var}}?
+        # TODO: Check supported syntax for variable, ie ${{var}}?
         if not _is_var_scope_local(node):
             self.check_non_local_variable(search_variable(variable.value).base, node, variable)
 
-    def visit_If(self, node):  # noqa
+    def visit_If(self, node):  # noqa: N802
         for token in node.header.get_tokens(Token.ASSIGN):
             self.check_for_reserved_naming_or_hyphen(token, "Variable")
         self.generic_visit(node)
 
-    def visit_Arguments(self, node):  # noqa
+    def visit_Arguments(self, node):  # noqa: N802
         for arg in node.get_tokens(Token.ARGUMENT):
             self.check_for_reserved_naming_or_hyphen(arg, "Argument")
 
@@ -1154,7 +1140,7 @@ class SimilarVariableChecker(VisitorChecker):
         self.parent_type = ""
         super().__init__()
 
-    def visit_Keyword(self, node):  # noqa
+    def visit_Keyword(self, node):  # noqa: N802
         self.assigned_variables = defaultdict(list)
         self.parent_name = node.name
         self.parent_type = type(node).__name__
@@ -1163,13 +1149,13 @@ class SimilarVariableChecker(VisitorChecker):
         self.visit_vars_and_find_similar(node)
         self.generic_visit(node)
 
-    def visit_TestCase(self, node):  # noqa
+    def visit_TestCase(self, node):  # noqa: N802
         self.assigned_variables = defaultdict(list)
         self.parent_name = node.name
         self.parent_type = type(node).__name__
         self.generic_visit(node)
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         if normalize_robot_name(node.keyword, remove_prefix="builtin.") in SET_VARIABLE_VARIANTS:
             normalized, assign_value = "", ""
             for index, token in enumerate(node.data_tokens[1:]):
@@ -1185,7 +1171,7 @@ class SimilarVariableChecker(VisitorChecker):
         tokens = node.get_tokens(Token.ASSIGN)
         self.find_similar_variables(tokens, node)
 
-    def visit_Var(self, node):  # noqa
+    def visit_Var(self, node):  # noqa: N802
         if node.errors:  # for example invalid variable definition like $var}
             return
         for arg in node.get_tokens(Token.ARGUMENT):
@@ -1194,14 +1180,14 @@ class SimilarVariableChecker(VisitorChecker):
         if variable:
             self.find_similar_variables([variable], node, ignore_overwriting=not _is_var_scope_local(node))
 
-    def visit_If(self, node):  # noqa
+    def visit_If(self, node):  # noqa: N802
         for token in node.header.get_tokens(Token.ARGUMENT):
             self.find_not_nested_variable(token, token.value, is_var=False)
         tokens = node.header.get_tokens(Token.ASSIGN)
         self.find_similar_variables(tokens, node)
         self.generic_visit(node)
 
-    def visit_While(self, node):  # noqa
+    def visit_While(self, node):  # noqa: N802
         for token in node.header.get_tokens(Token.ARGUMENT):
             self.find_not_nested_variable(token, token.value, is_var=False)
         return self.generic_visit(node)
@@ -1213,20 +1199,20 @@ class SimilarVariableChecker(VisitorChecker):
         else:
             yield from for_node.assign
 
-    def visit_For(self, node):  # noqa
+    def visit_For(self, node):  # noqa: N802
         for token in node.header.get_tokens(Token.ARGUMENT):
             self.find_not_nested_variable(token, token.value, is_var=False)
         for var in self.for_assign_vars(node):
             self.assigned_variables[normalize_robot_var_name(var)].append(var)
         self.generic_visit(node)
 
-    visit_ForLoop = visit_For
+    visit_ForLoop = visit_For  # noqa: N815
 
-    def visit_Return(self, node):  # noqa
+    def visit_Return(self, node):  # noqa: N802
         for token in node.get_tokens(Token.ARGUMENT):
             self.find_not_nested_variable(token, token.value, is_var=False)
 
-    visit_ReturnStatement = visit_Teardown = visit_Timeout = visit_Return
+    visit_ReturnStatement = visit_Teardown = visit_Timeout = visit_Return  # noqa: N815
 
     def parse_embedded_arguments(self, name_token):
         """Store embedded arguments from keyword name. Ignore embedded variables patterns (${var:pattern})."""
@@ -1242,7 +1228,8 @@ class SimilarVariableChecker(VisitorChecker):
             pass
 
     def check_inconsistent_naming(self, token, value: str, offset: int):
-        """Check if variable name ``value`` was already defined under matching but not the same name.
+        """
+        Check if variable name ``value`` was already defined under matching but not the same name.
         :param token: ast token representing the string with variable
         :param value: name of variable found in token value string
         :param offset: starting position of variable in token value string
@@ -1265,7 +1252,8 @@ class SimilarVariableChecker(VisitorChecker):
             )
 
     def find_not_nested_variable(self, token, value, is_var: bool, offset: int = 0):
-        """Find and process not nested variable.
+        """
+        Find and process not nested variable.
 
         Search `value` string until there is ${variable} without other variables inside.
         Unescaped escaped syntax ($var or \\${var}) is ignored.
@@ -1297,7 +1285,7 @@ class SimilarVariableChecker(VisitorChecker):
 
     def visit_vars_and_find_similar(self, node):
         """
-        Updates a dictionary `assign_variables` with normalized variable name as a key
+        Update a dictionary `assign_variables` with normalized variable name as a key
         and ads a list of all detected variations of this variable in the node as a value,
         then it checks if similar variable was found.
         """
@@ -1381,29 +1369,29 @@ class DeprecatedStatementChecker(VisitorChecker):
     }
     create_keywords = {"createdictionary", "createlist"}
 
-    def visit_KeywordCall(self, node):  # noqa
+    def visit_KeywordCall(self, node):  # noqa: N802
         self.check_if_keyword_is_deprecated(node.keyword, node)
         self.check_keyword_can_be_replaced_with_var(node.keyword, node)
 
-    def visit_SuiteSetup(self, node):  # noqa
+    def visit_SuiteSetup(self, node):  # noqa: N802
         self.check_if_keyword_is_deprecated(node.name, node)
 
-    visit_TestSetup = visit_Setup = visit_SuiteTeardown = visit_TestTeardown = visit_Teardown = visit_SuiteSetup
+    visit_TestSetup = visit_Setup = visit_SuiteTeardown = visit_TestTeardown = visit_Teardown = visit_SuiteSetup  # noqa: N815
 
-    def visit_Template(self, node):  # noqa
+    def visit_Template(self, node):  # noqa: N802
         if not node.value:
             return
         self.check_if_keyword_is_deprecated(node.value, node)
 
-    visit_TestTemplate = visit_Template
+    visit_TestTemplate = visit_Template  # noqa: N815
 
-    def visit_Return(self, node):  # noqa
+    def visit_Return(self, node):  # noqa: N802
         """For RETURN use visit_ReturnStatement - visit_Return will most likely visit RETURN in the future"""
         if ROBOT_VERSION.major not in (5, 6):
             return
         self.check_deprecated_return(node)
 
-    def visit_ReturnSetting(self, node):  # noqa
+    def visit_ReturnSetting(self, node):  # noqa: N802
         self.check_deprecated_return(node)
 
     def check_deprecated_return(self, node):
@@ -1417,7 +1405,7 @@ class DeprecatedStatementChecker(VisitorChecker):
             version="5.*",
         )
 
-    def visit_ForceTags(self, node):  # noqa
+    def visit_ForceTags(self, node):  # noqa: N802
         if ROBOT_VERSION.major < 6:
             return
         setting_name = node.data_tokens[0].value.lower()
@@ -1472,7 +1460,7 @@ class DeprecatedStatementChecker(VisitorChecker):
                 end_col=col + len(keyword_name),
             )
 
-    def visit_LibraryImport(self, node):  # noqa
+    def visit_LibraryImport(self, node):  # noqa: N802
         if ROBOT_VERSION.major < 5 or (ROBOT_VERSION.major == 5 and ROBOT_VERSION.minor == 0):
             return
         with_name_token = node.get_token(Token.WITH_NAME)
@@ -1485,7 +1473,7 @@ class DeprecatedStatementChecker(VisitorChecker):
             end_col=with_name_token.end_col_offset + 1,
         )
 
-    def visit_SectionHeader(self, node):  # noqa
+    def visit_SectionHeader(self, node):  # noqa: N802
         if not node.name:
             return
         normalized_name = string.capwords(node.name)
